@@ -1,4 +1,6 @@
 var express = require('express');
+const users = require('./../inc/users');
+var user = require('./../inc/users');
 var router = express.Router();
 
 
@@ -8,12 +10,32 @@ router.get("/", function(req, res, next){
 
 });
 
+router.post("/login", function(req, res, next){
+
+    if (!req.body.email) {
+        users.render(req, res, "Preencha o campo e-mail.")
+    } else if (!req.body.password) {
+        users.render(req, res, "Preencha o campo senha.")
+    } else {
+        user.login(req.body.email, req.body.password).then(user => {
+
+            req.session.user = user; 
+
+            res.redirect("/admin");
+
+        }).catch(err => {
+
+        users.render(req, res, err.message || err)
+
+
+        })
+    }
+
+})
+
 router.get("/login", function(req, res, next){
 
-    if(!req.session.views) req.session.views = 0;
-
-    console.log(req.session.views++);
-    res.render("admin/login");
+    users.render(req, res, null);
 
 });
 
