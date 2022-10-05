@@ -62,6 +62,8 @@ router.get('/menus', function(req, res, next) {
 
 });
 
+
+
 router.get('/reservations', function(req, res, next) {
   reservations.render(req, res);
 });
