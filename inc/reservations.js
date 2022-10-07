@@ -1,8 +1,9 @@
 const { query } = require("express");
-var conn = require("./db")
+var conn = require("./db");
+const Pagination = require("./pagination");
 
 module.exports = {
-    render(req, res, error, success){
+    render(req, res, error, success) {
         res.render('reservations', {
             title: 'Reservas - Restaurante Saboroso!',
             background: 'images/img_bg_2.jpg',
@@ -16,16 +17,16 @@ module.exports = {
 
     save(fields) {
 
-        return new Promise((resolve, reject)=> {
+        return new Promise((resolve, reject) => {
 
             if (fields.date.indexOf('/') > -1) {
 
                 let date = fields.date.split('/');
                 fields.date = `${date[2]}-${date[1]}-${date[0]}`;
-    
+
             }
 
-            
+
             let query, params = [
                 fields.name,
                 fields.email,
@@ -58,47 +59,64 @@ module.exports = {
 
             }
 
-            conn.query(query, params, (err, results)=> {
+            conn.query(query, params, (err, results) => {
 
-            if (err) {
-                reject(err)
-            } else {
-                resolve(results);
-            }
+                if (err) {
+                    reject(err)
+                } else {
+                    resolve(results);
+                }
 
-        });
+            });
 
         })
 
     },
-    getReservations() {
+    getReservations(req) {
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, reject)=>{
 
-            conn.query(`
-                    SELECT * FROM tb_reservations ORDER BY date DESC
-                `, (err, results) => {
-                if (err) {
-                    reject
-                }
+            let page = req.query.page;
+            let dtStart = req.query.start;
+            let dtEnd = req.query.end;
 
-                resolve(results);
+            if (!page) page = 1;
+
+            let params = [];
+    
+            if (dtStart && dtEnd) params.push(dtStart, dtEnd);
+    
+            let pag = new Pagination(
+                `
+                    SELECT SQL_CALC_FOUND_ROWS * 
+                    FROM tb_reservations 
+                    ${(dtStart && dtEnd) ? 'WHERE date BETWEEN ? AND ?' : ''}
+                    ORDER BY name LIMIT ?, ?
+                `, params
+            );
+    
+            pag.getPage(page).then(data => {
+
+                resolve({
+                    data,
+                    links: pag.getNavigation(req.query)
+                });
 
             });
 
         });
-
     },
+        
 
-    delete(id){
+    delete(id) {
 
-        return new Promise((resolve, reject)=>{
+        return new Promise((resolve, reject) => {
 
             conn.query(`
                 DELETE FROM tb_reservations WHERE id = ?
             `, [
                 id
-            ], (err, results)=>{
+            ], (err, results) => {
                 if (err) {
                     reject(err)
                 } else {
